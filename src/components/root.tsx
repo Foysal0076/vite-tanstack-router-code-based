@@ -19,6 +19,7 @@ export default function Root() {
         </Link>
         Pokemon 1
       </Link>
+      <Link to='/login'>Login</Link>
       <Outlet />
     </div>
   )

@@ -1,4 +1,9 @@
-import { createRootRoute, createRoute } from '@tanstack/react-router'
+import {
+  createRootRoute,
+  createRootRouteWithContext,
+  createRoute,
+  redirect,
+} from '@tanstack/react-router'
 import Root from './components/root'
 import HomePage from './pages/home'
 import DashboardPage from './pages/dashboard'
@@ -8,7 +13,11 @@ import PokemonDetailsPage from './pages/pokemons/pokemon-details'
 import { getPokemonDetails, getPokemonList } from './api/pokemon'
 import SearchPage from './pages/search'
 
-const rootRoute = createRootRoute({
+type RouterContext = {
+  authentication: AuthContextType
+}
+
+const rootRoute = createRootRouteWithContext<RouterContext>()({
   component: Root,
 })
 
@@ -21,6 +30,12 @@ const homeRoute = createRoute({
 const dashboardRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/dashboard',
+  beforeLoad: async ({ context }) => {
+    const { isAuthenticated } = context.authentication
+    if (!isAuthenticated()) {
+      throw redirect({ to: '/login' })
+    }
+  },
   component: DashboardPage,
 })
 
@@ -46,6 +61,8 @@ export const pokemonsDetailsRoute = createRoute({
 })
 
 import { z } from 'zod'
+import LoginPage from './pages/login'
+import { AuthContextType } from './hooks/use-auth'
 
 const ItemFiltersSchema = z.object({
   query: z.string(),
@@ -68,6 +85,18 @@ export const searchRoute = createRoute({
   component: SearchPage,
 })
 
+const loginRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/login',
+  component: LoginPage,
+  beforeLoad: async ({ context }) => {
+    const { isAuthenticated } = context.authentication
+    if (isAuthenticated()) {
+      throw redirect({ to: '/dashboard' })
+    }
+  },
+})
+
 export const rootTree = rootRoute.addChildren([
   homeRoute,
   dashboardRoute,
@@ -75,4 +104,5 @@ export const rootTree = rootRoute.addChildren([
   pokemonsRoute,
   pokemonsDetailsRoute,
   searchRoute,
+  loginRoute,
 ])
